@@ -32,7 +32,7 @@ fn setup(
         WasdMove { velocity: Vec2::ZERO, speed: 300. }
     ));
 
-    let rectangle = Mesh2dHandle(meshes.add(Rectangle::new(50.0, 100.0)));
+    let rectangle = Mesh2dHandle(meshes.add(Rectangle::new(50., 100.)));
     let player = Mesh2dHandle(meshes.add(RegularPolygon::new(50., 5)));
 
     commands.spawn(MaterialMesh2dBundle {
