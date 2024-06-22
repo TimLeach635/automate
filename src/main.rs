@@ -11,6 +11,7 @@ fn main() {
         .run();
 }
 
+// TODO: I think this should be made into a global resource, rather than a per-entity component
 #[derive(Component)]
 struct WasdInput(Vec2);
 
@@ -25,7 +26,11 @@ fn setup(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
-    commands.spawn(Camera2dBundle::default());
+    commands.spawn((
+        Camera2dBundle::default(),
+        WasdInput(Vec2::ZERO),
+        WasdMove { velocity: Vec2::ZERO, speed: 300. }
+    ));
 
     let rectangle = Mesh2dHandle(meshes.add(Rectangle::new(50.0, 100.0)));
     let player = Mesh2dHandle(meshes.add(RegularPolygon::new(50., 5)));
