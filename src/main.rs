@@ -9,7 +9,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_systems(Startup, setup)
         .add_systems(Update, (capture_wasd, move_wasd).chain())
-        .add_systems(Update, (capture_mouse_clicks).chain())
+        .add_systems(Update, (capture_mouse_clicks, move_to_last_click).chain())
         .run();
 }
 
@@ -26,11 +26,21 @@ struct WasdMove {
     speed: f32,
 }
 
+#[derive(Resource, Default)]
+struct LastMouseClick(Vec2);
+
+#[derive(Component)]
+struct MoveToClicks {
+    speed: f32,
+}
+
 fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
+    commands.init_resource::<LastMouseClick>();
+
     commands.spawn((
         Camera2dBundle::default(),
         WasdInput(Vec2::ZERO),
@@ -53,8 +63,7 @@ fn setup(
             material: materials.add(Color::PURPLE),
             ..default()
         },
-        WasdInput(Vec2::ZERO),
-        WasdMove { velocity: Vec2::ZERO, speed: 300. }
+        MoveToClicks { speed: 300. }
     ));
 }
 
@@ -97,6 +106,7 @@ fn move_wasd(
 }
 
 fn capture_mouse_clicks(
+    mut last_click: ResMut<LastMouseClick>,
     q_window: Query<&Window, With<PrimaryWindow>>,
     q_camera: Query<(&Camera, &GlobalTransform), With<ClickCapturer>>,
     mouse: Res<ButtonInput<MouseButton>>,
@@ -109,7 +119,37 @@ fn capture_mouse_clicks(
         .map(|ray| ray.origin.truncate())
     {
         if mouse.just_pressed(MouseButton::Left) {
-            info!("Mouse click at world position ({},{})", world_position.x, world_position.y);
+            last_click.0 = world_position;
         }
+    }
+}
+
+fn move_to_last_click(
+    last_click: Res<LastMouseClick>,
+    mut query: Query<(&MoveToClicks, &mut Transform)>,
+    time: Res<Time>,
+) {
+    for (mover, mut transform) in &mut query {
+        let distance = transform.translation
+            .truncate()
+            .distance(last_click.0);
+
+        // if they're already there, don't need to do anything
+        if distance == 0. {
+            break;
+        }
+
+        // if we can move there in one tick, do so
+        if distance <= mover.speed * time.delta_seconds() {
+            transform.translation.x = last_click.0.x;
+            transform.translation.y = last_click.0.y;
+            break;
+        }
+
+        // otherwise, step the maximum distance in the right direction
+        let direction = last_click.0 - transform.translation.truncate();
+        let step = direction.clamp_length_max(mover.speed * time.delta_seconds());
+        transform.translation.x += step.x;
+        transform.translation.y += step.y;
     }
 }
