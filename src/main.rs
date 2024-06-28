@@ -114,11 +114,11 @@ fn capture_mouse_clicks(
     let (camera, camera_transform) = q_camera.single();
     let window = q_window.single();
 
-    if let Some(world_position) = window.cursor_position()
-        .and_then(|cursor| camera.viewport_to_world(camera_transform, cursor))
-        .map(|ray| ray.origin.truncate())
-    {
-        if mouse.just_pressed(MouseButton::Left) {
+    if mouse.just_pressed(MouseButton::Left) {
+        if let Some(world_position) = window.cursor_position()
+            .and_then(|cursor| camera.viewport_to_world(camera_transform, cursor))
+            .map(|ray| ray.origin.truncate())
+        {
             last_click.0 = world_position;
         }
     }
